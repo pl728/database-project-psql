@@ -1,0 +1,211 @@
+csc343h-linpatr4=> \i schema.ddl
+psql:schema.ddl:1: NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to table nycaccidents
+drop cascades to table nycweatherstations
+drop cascades to table nycdailyweather
+drop cascades to table nyccasualties
+drop cascades to table nycfactors
+drop cascades to table usholidays
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+
+csc343h-linpatr4=> \i import.sql
+psql:crashes.ddl:1: NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to table nycaccidents
+drop cascades to table nycweatherstations
+drop cascades to table nycdailyweather
+drop cascades to table nyccasualties
+drop cascades to table nycfactors
+drop cascades to table usholidays
+DROP SCHEMA
+CREATE SCHEMA
+SET
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+COPY 231007
+COPY 630
+COPY 94973
+COPY 44681
+COPY 231007
+COPY 484
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM NYCAccidents;
+ count
+--------
+ 231007
+(1 row)
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM NYCWeatherStations;
+ count
+-------
+   630
+(1 row)
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM NYCDailyWeather;
+ count
+-------
+ 94973
+(1 row)
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM NYCCasualties;
+ count
+-------
+ 44681
+(1 row)
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM NYCFactors;
+ count
+--------
+ 231007
+(1 row)
+
+csc343h-linpatr4=> SELECT COUNT(*) FROM USHolidays;
+ count
+-------
+   484
+(1 row)
+
+csc343h-linpatr4=> SELECT * FROM NYCAccidents
+csc343h-linpatr4-> WHERE EXTRACT(MONTH FROM crashtime)=1
+csc343h-linpatr4-> AND EXTRACT(DAY FROM crashtime)=1
+csc343h-linpatr4-> AND EXTRACT(HOUR FROM crashtime)=1;
+ collisionid |      crashtime      | longitude  | latitude
+-------------+---------------------+------------+-----------
+ 3589950     | 2017-01-01 01:00:00 | -73.807465 |  40.73966
+ 3590353     | 2017-01-01 01:00:00 |  -73.98029 |  40.60569
+ 3590010     | 2017-01-01 01:00:00 |  -73.80489 | 40.753765
+ 3590436     | 2017-01-01 01:00:00 |  -73.90267 | 40.707268
+ 3591246     | 2017-01-01 01:05:00 | -73.991295 | 40.719482
+ 3590035     | 2017-01-01 01:05:00 | -73.770805 | 40.692844
+ 3590553     | 2017-01-01 01:05:00 | -73.954155 | 40.583107
+ 3589964     | 2017-01-01 01:05:00 |  -73.86123 | 40.716038
+ 3591220     | 2017-01-01 01:20:00 | -73.982285 |    40.674
+ 3590029     | 2017-01-01 01:25:00 |   -73.9957 |  40.74915
+ 3591478     | 2017-01-01 01:25:00 |    -73.898 | 40.844105
+ 3590871     | 2017-01-01 01:29:00 |  -73.95205 |  40.77745
+ 3600676     | 2017-01-01 01:30:00 |  -73.95009 | 40.674313
+ 3589949     | 2017-01-01 01:30:00 |  -73.98716 | 40.720573
+ 3591186     | 2017-01-01 01:30:00 |  -73.98717 |  40.69496
+ 3589970     | 2017-01-01 01:30:00 |  -73.70498 | 40.736694
+ 3591353     | 2017-01-01 01:30:00 |  -73.99915 |  40.75458
+ 3590783     | 2017-01-01 01:30:00 |  -73.88469 | 40.751785
+ 3590276     | 2017-01-01 01:40:00 |  -74.16039 |  40.63159
+ 3590224     | 2017-01-01 01:40:00 | -73.940414 | 40.722496
+ 3590377     | 2017-01-01 01:41:00 |  -73.95032 |  40.74641
+ 3590453     | 2017-01-01 01:42:00 |  -73.95141 |  40.59938
+ 3590003     | 2017-01-01 01:43:00 |  -73.91727 |  40.77077
+ 3590263     | 2017-01-01 01:44:00 |  -73.91648 |  40.65785
+ 3820302     | 2017-01-01 01:45:00 |  -73.85158 | 40.880825
+ 3589952     | 2017-01-01 01:48:00 |  -73.84204 |   40.6679
+ 3589957     | 2017-01-01 01:50:00 |  -73.81447 | 40.669384
+ 3589972     | 2017-01-01 01:50:00 |  -73.84495 |  40.68231
+ 3590543     | 2017-01-01 01:55:00 | -73.884865 |  40.67613
+ 3590907     | 2017-01-01 01:55:00 |   -73.9525 | 40.695004
+(30 rows)
+
+csc343h-linpatr4=> SELECT * FROM NYCWeatherStations
+csc343h-linpatr4-> WHERE longitude>-79
+csc343h-linpatr4-> AND longitude < 79.1
+csc343h-linpatr4-> AND latitude < 42.2
+csc343h-linpatr4-> AND latitude > 42.1;
+  stationid  |  longitude   |  latitude
+-------------+--------------+------------
+ USW00014748 |    -76.89194 |   42.15944
+ US1NYCB0001 |   -73.767857 |  42.133493
+ USC00300093 |     -78.7497 |    42.1003
+ US1NYBM0023 |   -75.834663 |  42.197155
+ US1NYBM0024 |   -75.885822 |  42.109808
+ USC00301168 |     -76.3127 |    42.1944
+ US1NYBM0032 |      -75.889 |   42.14146
+ USC00300023 |     -77.2344 |    42.1013
+ USC00300254 |     -74.6536 |    42.1394
+ US1NYCT0011 |   -78.490541 |  42.158704
+ US1NYCT0002 |   -78.961201 |  42.170556
+ US1NYCB0008 |  -73.7853733 | 42.1330757
+ USC00301787 |     -77.0691 |    42.1341
+ US1NYDL0024 |   -75.258472 |  42.165338
+ USW00054757 |    -77.99194 |   42.10944
+ US1NYCM0023 |   -76.834943 |  42.182384
+ US1NYCM0021 | -76.83036804 | 42.1021347
+ US1NYCM0020 |   -76.815854 |  42.132515
+ USC00309072 |     -77.9475 |    42.1173
+ US1NYST0004 |    -76.97034 |   42.14035
+ US1NYTG0019 |     -76.2213 |    42.1246
+ US1NYST0030 |   -77.060046 | 42.1573149
+ USC00308932 |     -75.1455 |    42.1847
+ USC00306649 |     -74.0914 |    42.1389
+ US1NYDL0031 |    -74.95975 |  42.196411
+(25 rows)
+
+csc343h-linpatr4=> SELECT * FROM NYCDailyWeather
+csc343h-linpatr4-> WHERE EXTRACT(MONTH FROM day)=1
+csc343h-linpatr4-> AND EXTRACT(DAY FROM day)<5
+csc343h-linpatr4-> AND stationid='US1NYOG0012';
+    day     |  stationid  | mintemp | maxtemp | avgtemp | precip | snowfall | snowdepth | watersnowonground | watersnowfall | avgwindspeed
+------------+-------------+---------+---------+---------+--------+----------+-----------+-------------------+---------------+--------------
+ 2017-01-01 | US1NYOG0012 |         |         |         |   0.12 |        0 |         6 |                   |               |
+ 2017-01-02 | US1NYOG0012 |         |         |         |      0 |        0 |         3 |                   |               |
+ 2017-01-03 | US1NYOG0012 |         |         |         |      0 |        0 |         2 |                   |               |
+ 2017-01-04 | US1NYOG0012 |         |         |         |   0.68 |        0 |         1 |                   |               |
+(4 rows)
+
+csc343h-linpatr4=> SELECT * FROM NYCCasualties
+csc343h-linpatr4-> WHERE cyclistInjured = 1
+csc343h-linpatr4-> AND motoristInjured = 1;
+ collisionid | pedestrianinjured | pedestriankilled | cyclistinjured | cyclistkilled | motoristinjured | motoristkilled
+-------------+-------------------+------------------+----------------+---------------+-----------------+----------------
+ 3611705     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3805270     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3774629     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3756093     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3740907     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3735891     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3736475     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3736569     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3730979     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3699447     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3707335     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3706433     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3675058     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3673063     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3674241     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3662127     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3653479     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3644048     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3643423     |                 0 |                0 |              1 |             0 |               1 |              0
+ 3635581     |                 0 |                0 |              1 |             0 |               1 |              0
+(20 rows)
+
+csc343h-linpatr4=> select * from NYCFactors Where vehicle1='Sedan' and vehicle2='sedan';
+ collisionid |            factor1             |            factor2             | factor3 | factor4 | factor5 | vehicle1 | vehicle2 | vehicle3 | vehicle4 | vehicle5
+-------------+--------------------------------+--------------------------------+---------+---------+---------+----------+----------+----------+----------+----------
+ 3821435     | Unspecified                    |                                |         |         |         | Sedan    | sedan    |          |          |
+ 3653711     | Passing or Lane Usage Improper | Driver Inattention/Distraction |         |         |         | Sedan    | sedan    |          |          |
+(2 rows)
+
+csc343h-linpatr4=> csc343h-linpatr4=> SELECT * FROM USHolidays
+csc343h-linpatr4-> WHERE EXTRACT(YEAR FROM day) = 2017;
+    day     |               holiday
+------------+-------------------------------------
+ 2017-01-02 | New Year's Day
+ 2017-01-16 | Birthday of Martin Luther King, Jr.
+ 2017-02-20 | Washington's Birthday
+ 2017-05-29 | Memorial Day
+ 2017-07-04 | Independence Day
+ 2017-09-04 | Labor Day
+ 2017-10-09 | Columbus Day
+ 2017-11-10 | Veterans Day
+ 2017-11-23 | Thanksgiving Day
+ 2017-12-25 | Christmas Day
+(10 rows)

@@ -1,0 +1,641 @@
+# this demo contains the entirety of the query and each of its intermediate steps,
+# with the result of the query at the end of each section (separated by '===')
+# along with a description of the preceding query
+# [steps]
+# [TAG]
+# [query]
+# =============
+# [steps]
+# [TAG]
+# [query]
+# =============
+...
+
+csc343h-linpatr4=> -- Number of accidents per day
+csc343h-linpatr4=> DROP VIEW IF EXISTS DailyAccidents CASCADE;
+NOTICE:  view "dailyaccidents" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW DailyAccidents AS
+csc343h-linpatr4-> SELECT DATE(crashTime) as day, count(*) as totalCrashes
+csc343h-linpatr4-> FROM NYCAccidents
+csc343h-linpatr4-> GROUP BY DATE(crashTime);
+-- CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Number of accidents that happened on holidays
+csc343h-linpatr4=> insert into qHolAccidents
+csc343h-linpatr4-> (SELECT *
+csc343h-linpatr4(> FROM USHolidays NATURAL JOIN DailyAccidents
+csc343h-linpatr4(> ORDER BY totalCrashes);
+INSERT 0 10
+
+TAG: 'Number of accidents that happened on holidays'
+TAG: 'Query 1'
+
+csc343h-linpatr4=> select * from qholaccidents;
+    day     |               holiday               | totalcrashes
+------------+-------------------------------------+--------------
+ 2017-12-25 | Christmas Day                       |          333
+ 2017-05-29 | Memorial Day                        |          371
+ 2017-07-04 | Independence Day                    |          424
+ 2017-02-20 | Washington's Birthday               |          428
+ 2017-01-02 | New Year's Day                      |          449
+ 2017-11-23 | Thanksgiving Day                    |          469
+ 2017-01-16 | Birthday of Martin Luther King, Jr. |          477
+ 2017-09-04 | Labor Day                           |          532
+ 2017-10-09 | Columbus Day                        |          546
+ 2017-11-10 | Veterans Day                        |          724
+(10 rows)
+
+================================================================================
+
+csc343h-linpatr4=> -- Number of holidays per month
+csc343h-linpatr4=> DROP VIEW IF EXISTS MonthlyHolidays CASCADE;
+NOTICE:  view "monthlyholidays" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW MonthlyHolidays AS
+csc343h-linpatr4-> SELECT EXTRACT(MONTH FROM day) as month, count(*) as totalHolidays
+csc343h-linpatr4-> FROM USHolidays
+csc343h-linpatr4-> GROUP BY EXTRACT(MONTH FROM day);
+
+-- NumbCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Number of accidents and number of holidays by month
+csc343h-linpatr4=> insert into qMonthHolAccidents
+csc343h-linpatr4-> (SELECT *
+csc343h-linpatr4(> FROM MonthlyHolidays NATURAL JOIN MonthlyAccidents
+csc343h-linpatr4(> ORDER BY month);
+INSERT 0 8
+
+TAG: 'Number of accidents and number of holidays by month'
+TAG: 'Query 2'
+
+csc343h-linpatr4=> select * from qmonthholaccidents;
+ month | totalholidays | totalcrashes
+-------+---------------+--------------
+     1 |            85 |        17549
+     2 |            50 |        15835
+     5 |            49 |        21013
+     7 |            50 |        19593
+     9 |            50 |        19604
+    10 |            50 |        20360
+    11 |            99 |        19661
+    12 |            51 |        19717
+(8 rows)
+
+================================================================================
+
+csc343h-linpatr4=> -- Major crashes (crashes with at least 1 injured or 1 death)
+csc343h-linpatr4=> DROP VIEW IF EXISTS MajorCrashes CASCADE;
+NOTICE:  view "majorcrashes" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW MajorCrashes AS
+csc343h-linpatr4-> SELECT collisionID, 1 as major
+csc343h-linpatr4-> FROM NYCCasualties
+csc343h-linpatr4-> WHERE (pedestrianInjured > 0) OR (pedestrianKilled > 0) OR (cyclistInjured>0) OR (cyclistKilled>0) OR (motoristInjured>0) OR (motoristKilled>0);
+
+--CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Weather station reports and the longitude and lattitude of the reporting weather station
+csc343h-linpatr4=> DROP VIEW IF EXISTS DailyWeatherLL CASCADE;
+CNOTICE:  view "dailyweatherll" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW DailyWeatherLL AS
+csc343h-linpatr4-> SELECT w.stationID as stationID, day, longitude, latitude, avgTemp, precip, avgWindSpeed
+csc343h-linpatr4-> FROM NYCDailyWeather as w JOIN NYCWeatherStations as s ON w.stationID = s.stationID;
+
+-CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and weather stations that reported avgTemp on the day of crash
+csc343h-linpatr4=> DROP VIEW IF EXISTS tempCrashesValidWS CASCADE;
+NOTICE:  view "tempcrashesvalidws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW tempCrashesValidWS AS
+csc343h-linpatr4-> SELECT collisionID, s.day, stationID, avgTemp, c.longitude as crashLong, c.latitude as crashLat, s.longitude as wsLong, s.latitude as wsLat
+Fcsc343h-linpatr4-> FROM NYCAccidents as c JOIN DailyWeatherLL as s ON DATE(c.crashTIME) = s.day
+csc343h-linpatr4-> WHERE avgTemp IS NOT NULL;
+
+-- CraCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and their squared distance to avgTemp reporting weather stations in NYC
+csc343h-linpatr4=> DROP VIEW IF EXISTS tempCrashesDistanceWS CASCADE;
+NOTICE:  view "tempcrashesdistancews" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW tempCrashesDistanceWS AS
+csc343h-linpatr4-> SELECT collisionID, stationID, day, avgTemp, ((crashLong-wsLong)*(crashLong-wsLong)+(crashLat-wsLat)*(crashLat-wsLat)) as distanceSquared
+csc343h-linpatr4-> FROM tempCrashesValidWS;
+
+-- CrasCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the smallest squared distance to weather station that reported avgTemp
+csc343h-linpatr4=> DROP VIEW IF EXISTS tempCrashesMinD CASCADE;
+CNOTICE:  view "tempcrashesmind" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW tempCrashesMinD AS
+csc343h-linpatr4-> SELECT collisionID, min(distanceSquared) as minDistanceSquared
+csc343h-linpatr4-> FROM tempCrashesDistanceWS
+csc343h-linpatr4-> GROUP BY collisionID;
+
+-- CCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the closest weather stations that reported avg temp
+csc343h-linpatr4=> DROP VIEW IF EXISTS tempCrashesClosestWS CASCADE;
+RNOTICE:  view "tempcrashesclosestws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW tempCrashesClosestWS AS
+csc343h-linpatr4-> SELECT a.collisionID as collisionID, a.stationID as stationID, avgTemp, day
+Fcsc343h-linpatr4-> FROM tempCrashesDistanceWS as a JOIN tempCrashesMinD as m ON a.collisionID = m.collisionID and a.distanceSquared = m.minDistanceSquared;
+
+-- CrCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and average of reported average temperature across all closest weather stations
+csc343h-linpatr4=> DROP VIEW IF EXISTS tempCrashesAvgTempWS CASCADE;
+CNOTICE:  view "tempcrashesavgtempws" does not exist, skipping
+DROP VIEW
+Rcsc343h-linpatr4=> CREATE VIEW tempCrashesAvgTempWS AS
+csc343h-linpatr4-> SELECT a.collisionID as collisionID, day, AVG(avgTemp) as overallAvgTemp, SUM(major) as major
+csc343h-linpatr4-> FROM tempCrashesClosestWS as a LEFT JOIN MajorCrashes as m ON a.collisionID = m.collisionID
+csc343h-linpatr4-> GROUP BY a.collisionID, day;
+- TotCREATE VIEW
+csc343h-linpatr4=>
+acsc343h-linpatr4=> -- Total number of crashes by daily average temperate (as reported by nearest weather station to crash location) and proportion of major crashes
+csc343h-linpatr4=> insert into qAccidentsTemp
+csc343h-linpatr4-> (SELECT overallAvgTemp as temp, COUNT(distinct collisionID)/COUNT(distinct day) as avgCrashes, COALESCE(SUM(major), 0)/COUNT(distinct collisionID) as propMajor
+csc343h-linpatr4(> FROM tempCrashesAvgTempWS
+csc343h-linpatr4(> GROUP BY overallAvgTemp
+csc343h-linpatr4(> ORDER BY temp);
+INSERT 0 68
+
+TAG: 'Average number of crashes per day and proportion of major accidents by average temperate (as reported by nearest weather stations to crash location)'
+TAG: 'Query 3'
+
+csc343h-linpatr4=> select * from qaccidentstemp;
+temp | avgcrashes |     propmajor
+------+------------+-------------------
+  16 |          1 |               0.5
+  17 |          1 |                 1
+  18 |          1 |                 0
+  20 |         88 | 0.227272727272727
+  21 |        301 | 0.154228855721393
+  23 |        101 | 0.141447368421053
+  24 |        365 | 0.143835616438356
+  25 |        296 | 0.134278002699055
+  26 |        358 | 0.144186046511628
+  27 |        192 | 0.194107452339688
+  28 |        313 | 0.181644359464627
+  29 |        516 | 0.195736434108527
+  30 |         49 | 0.176767676767677
+  31 |        143 | 0.176265270506108
+  32 |        395 | 0.176002891217926
+  33 |        225 | 0.164201183431953
+  34 |        315 | 0.158328055731476
+  35 |        190 | 0.185157421289355
+  36 |        214 | 0.186659772492244
+  37 |        255 | 0.178151260504202
+  38 |        200 | 0.176214196762142
+  39 |        371 | 0.179004037685061
+  40 |        224 | 0.191707534551939
+  41 |        246 | 0.192463768115942
+  42 |        371 | 0.188327814569536
+  43 |        265 | 0.197318810222036
+  44 |        341 | 0.183540022547914
+  45 |         63 | 0.191823899371069
+  46 |        420 | 0.193143245078072
+  47 |        336 | 0.180163447251114
+  48 |        127 | 0.193971166448231
+  49 |        204 | 0.213936430317848
+  50 |        339 | 0.179137486177663
+  51 |        224 | 0.192599197503344
+  52 |        230 | 0.192744991878722
+  53 |        245 | 0.195329873980726
+  54 |        235 | 0.193337687785761
+  55 |        268 | 0.186716367333107
+  56 |        429 | 0.183512962423536
+  57 |        324 | 0.190457868410927
+  58 |        391 | 0.196565328382455
+  59 |        262 |  0.18001525553013
+  60 |        234 | 0.204878048780488
+  61 |        177 | 0.165021156558533
+  62 |        329 | 0.184086311530681
+  63 |        473 | 0.185810810810811
+  64 |        272 | 0.191176470588235
+  65 |        150 | 0.220643939393939
+  66 |        320 | 0.204888195527821
+  67 |        377 | 0.190812720848057
+  68 |         97 | 0.243986254295533
+  69 |        194 | 0.196749358426005
+  70 |         83 | 0.227544910179641
+  71 |        489 | 0.204290091930541
+  72 |         94 | 0.216312056737589
+  74 |        183 | 0.206708975521306
+  75 |        173 | 0.219653179190751
+  76 |        372 | 0.198657718120805
+  77 |        389 | 0.196300102774923
+  78 |        313 | 0.202975557917109
+  79 |        446 | 0.195522388059701
+  80 |        382 | 0.179728317659352
+  81 |        648 | 0.180555555555556
+  82 |        102 | 0.245098039215686
+  84 |        547 | 0.180987202925046
+  87 |        653 | 0.188361408882083
+  88 |        759 | 0.190915075707702
+  90 |        686 | 0.164723032069971
+(68 rows)
+
+================================================================================
+
+csc343h-linpatr4=> -- Crashes and weather stations that reported precip on the day of crash and their rounded precip
+csc343h-linpatr4=> DROP VIEW IF EXISTS precipCrashesValidWS CASCADE;
+CNOTICE:  view "precipcrashesvalidws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW precipCrashesValidWS AS
+Scsc343h-linpatr4-> SELECT collisionID, s.day, stationID, precip, c.longitude as crashLong, c.latitude as crashLat, s.longitude as wsLong, s.latitude as wsLat
+csc343h-linpatr4-> FROM NYCAccidents as c JOIN DailyWeatherLL as s ON DATE(c.crashTIME) = s.day
+csc343h-linpatr4-> WHERE precip IS NOT NULL;
+
+-- CrashCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and their squared distance to precip reporting weather stations in NYC
+csc343h-linpatr4=> DROP VIEW IF EXISTS precipCrashesDistanceWS CASCADE;
+CNOTICE:  view "precipcrashesdistancews" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW precipCrashesDistanceWS AS
+csc343h-linpatr4-> SELECT collisionID, stationID, day, precip, ((crashLong-wsLong)*(crashLong-wsLong)+(crashLat-wsLat)*(crashLat-wsLat)) as distanceSquared
+csc343h-linpatr4-> FROM precipCrashesValidWS;
+
+-- CraCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the smallest squared distance to weather station that reports precip
+csc343h-linpatr4=> DROP VIEW IF EXISTS precipCrashesMinD CASCADE;
+NOTICE:  view "precipcrashesmind" does not exist, skipping
+DROP VIEW
+Ccsc343h-linpatr4=> CREATE VIEW precipCrashesMinD AS
+Scsc343h-linpatr4-> SELECT collisionID, min(distanceSquared) as minDistanceSquared
+csc343h-linpatr4-> FROM precipCrashesDistanceWS
+csc343h-linpatr4-> GROUP BY collisionID;
+-- CCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the closest weather stations that reported precip
+csc343h-linpatr4=> DROP VIEW IF EXISTS precipCrashesClosestWS CASCADE;
+CNOTICE:  view "precipcrashesclosestws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW precipCrashesClosestWS AS
+csc343h-linpatr4-> SELECT a.collisionID as collisionID, a.stationID as stationID, precip, day
+csc343h-linpatr4-> FROM precipCrashesDistanceWS as a JOIN precipCrashesMinD as m ON a.collisionID = m.collisionID and a.distanceSquared = m.minDistanceSquared;
+
+CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and average of reported precip across all closest weather stations and the major proportion
+csc343h-linpatr4=> DROP VIEW IF EXISTS precipCrashesAvgTempWS CASCADE;
+NOTICE:  view "precipcrashesavgtempws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW precipCrashesAvgTempWS AS
+csc343h-linpatr4-> SELECT a.collisionID as collisionID, day, AVG(precip) as overallPrecip, SUM(major) as major
+csc343h-linpatr4-> FROM precipCrashesClosestWS as a LEFT JOIN MajorCrashes as m ON a.collisionID = m.collisionID
+csc343h-linpatr4-> GROUP BY a.collisionID, day;
+
+-- CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Average number of crashes per day by average precip, rounded to nearest tenth (as reported by nearest weather stations to crash location) and proportion of major crashes
+csc343h-linpatr4=> insert into qAccidentsPrecip
+csc343h-linpatr4-> (SELECT ROUND(overallPrecip ::int) as precip, COUNT(distinct collisionID)/COUNT(distinct day) as avgCrashes, COALESCE(SUM(major), 0)/COUNT(distinct collisionID) as propMajor
+Fcsc343h-linpatr4(> FROM precipCrashesAvgTempWS
+csc343h-linpatr4(> GROUP BY ROUND(overallPrecip ::int)
+csc343h-linpatr4(> ORDER BY precip);
+INSERT 0 6
+
+TAG: 'Average number of crashes per day and proportion of major accidents by average precip, rounded to nearest integer (as reported by nearest weather stations to crash location)'
+TAG: 'Query 4'
+
+csc343h-linpatr4=> select * from qaccidentsprecip
+csc343h-linpatr4-> ;
+ precip | avgcrashes |     propmajor
+--------+------------+-------------------
+      0 |        562 | 0.194391803861187
+      1 |        258 | 0.180090414244857
+      2 |        161 | 0.186190312607351
+      3 |        129 | 0.182519280205656
+      4 |        155 | 0.196141479099678
+      5 |          2 |                 0
+(6 rows)
+
+================================================================================
+
+csc343h-linpatr4=> -- Crashes and their squared distance to avgWindSpeed reporting weather stations in NYC
+csc343h-linpatr4=> DROP VIEW IF EXISTS windCrashesDistanceWS CASCADE;
+NOTICE:  view "windcrashesdistancews" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW windCrashesDistanceWS AS
+csc343h-linpatr4-> SELECT collisionID, stationID, day, avgWindSpeed, ((crashLong-wsLong)*(crashLong-wsLong)+(crashLat-wsLat)*(crashLat-wsLat)) as distanceSquared
+Fcsc343h-linpatr4-> FROM windCrashesValidWS;
+
+-- CraCREATE VIEW
+scsc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the smallest squared distance to weather station that reports avgWindSpeed
+csc343h-linpatr4=> DROP VIEW IF EXISTS windCrashesMinD CASCADE;
+NOTICE:  view "windcrashesmind" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW windCrashesMinD AS
+csc343h-linpatr4-> SELECT collisionID, min(distanceSquared) as minDistanceSquared
+csc343h-linpatr4-> FROM precipCrashesDistanceWS
+csc343h-linpatr4-> GROUP BY collisionID;
+-- CraCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and the closest weather stations that reported avgWindSpeed
+csc343h-linpatr4=> DROP VIEW IF EXISTS windCrashesClosestWS CASCADE;
+NOTICE:  view "windcrashesclosestws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW windCrashesClosestWS AS
+csc343h-linpatr4-> SELECT a.collisionID as collisionID, a.stationID as stationID, avgWindSpeed, day
+csc343h-linpatr4-> FROM windCrashesDistanceWS as a JOIN windCrashesMinD as m ON a.collisionID = m.collisionID and a.distanceSquared = m.minDistanceSquared;
+CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes and average of reported avgWindSpeed across all closest weather stations and major proportion
+csc343h-linpatr4=> DROP VIEW IF EXISTS windCrashesAvgTempWS CASCADE;
+CRENOTICE:  view "windcrashesavgtempws" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW windCrashesAvgTempWS AS
+Scsc343h-linpatr4-> SELECT a.collisionID as collisionID, day, AVG(avgWindSpeed) as overallAvgWindSpeed, SUM(major) as major
+csc343h-linpatr4-> FROM windCrashesClosestWS as a LEFT JOIN MajorCrashes as m ON a.collisionID = m.collisionID
+csc343h-linpatr4-> GROUP BY a.collisionID, day;
+
+-CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Total number of crashes by average windSpeed (as reported by nearest weather stations to crash location) and proportion of major crashes
+csc343h-linpatr4=> insert into qAccidentsWind
+csc343h-linpatr4-> (SELECT ROUND(overallAvgWindSpeed ::int) as windSpeed, COUNT(distinct collisionID)/COUNT(distinct day) as avgCrashes, COALESCE(SUM(major), 0)/COUNT(distinct collisionID) as propMajor
+csc343h-linpatr4(> FROM windCrashesAvgTempWS
+Gcsc343h-linpatr4(> GROUP BY ROUND(overallAvgWindSpeed ::int)
+csc343h-linpatr4(> ORDER BY windSpeed);
+INSERT 0 28
+
+TAG: 'Avg number of crashes per day and proportion of major accidents by average wind speed, rounded to nearest integer (as reported by nearest weather stations to crash location)'
+TAG: 'Query 5'
+
+csc343h-linpatr4=> select * from qaccidentswind;
+ windspeed | avgcrashes |     propmajor
+-----------+------------+-------------------
+         1 |        264 |  0.17550505050505
+         2 |        249 | 0.178146709054515
+         3 |        222 | 0.175169905235953
+         4 |        176 | 0.182396882104579
+         5 |        165 | 0.179831721712922
+         6 |        141 |  0.19292209388056
+         7 |        132 | 0.194373773351748
+         8 |        130 | 0.188335283611505
+         9 |        139 | 0.202381965121225
+        10 |        144 | 0.213434352767255
+        11 |        119 | 0.209688067337845
+        12 |        105 | 0.209594333547972
+        13 |         91 | 0.195369847543761
+        14 |        106 | 0.200062421972534
+        15 |        125 | 0.215622660344397
+        16 |        106 | 0.201734539969834
+        17 |        108 | 0.206500956022945
+        18 |         93 | 0.194567277321541
+        19 |         78 | 0.198513800424628
+        20 |        124 |  0.16515609264854
+        21 |         80 | 0.192513368983957
+        22 |        103 | 0.201657458563536
+        23 |         36 | 0.111111111111111
+        24 |        102 | 0.190243902439024
+        25 |         67 | 0.134328358208955
+        26 |         31 | 0.225806451612903
+        27 |        154 | 0.188311688311688
+        28 |        142 | 0.246478873239437
+(28 rows)
+
+================================================================================
+
+csc343h-linpatr4=> -- ** per station **
+csc343h-linpatr4=> DROP TABLE IF EXISTS qAccidentsTempWS;
+NOTICE:  table "qaccidentstempws" does not exist, skipping
+DROP TABLE
+csc343h-linpatr4=> CREATE TABLE qAccidentsTempWS (
+csc343h-linpatr4(>     temp int not null,
+csc343h-linpatr4(>     stationsReportedPerDay float,
+csc343h-linpatr4(>     averagecrashesperdayperstation float
+csc343h-linpatr4(> );
+
+DROP TACREATE TABLE
+Bcsc343h-linpatr4=>
+csc343h-linpatr4=> DROP TABLE IF EXISTS qAccidentsPrecipWS;
+NOTICE:  table "qaccidentsprecipws" does not exist, skipping
+DROP TABLE
+csc343h-linpatr4=> CREATE TABLE qAccidentsPrecipWS (
+csc343h-linpatr4(>     precip int not null,
+csc343h-linpatr4(>     stationsReportedPerDay float,
+csc343h-linpatr4(>     averagecrashesperdayperstation float
+csc343h-linpatr4(> );
+
+DROPCREATE TABLE
+csc343h-linpatr4=>
+csc343h-linpatr4=> DROP TABLE IF EXISTS qAccidentsWindWS;
+CNOTICE:  table "qaccidentswindws" does not exist, skipping
+DROP TABLE
+csc343h-linpatr4=> CREATE TABLE qAccidentsWindWS (
+csc343h-linpatr4(>     wind int not null,
+csc343h-linpatr4(>     stationsReportedPerDay float,
+acsc343h-linpatr4(>     averagecrashesperdayperstation float
+csc343h-linpatr4(> );
+-- CraCREATE TABLE
+csc343h-linpatr4=>
+csc343h-linpatr4=> -- Crashes perday per station [stations reported temp, precip, wind]
+csc343h-linpatr4=> DROP VIEW IF EXISTS StationsReportTemp CASCADE;
+NOTICE:  view "stationsreporttemp" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW StationsReportTemp AS
+csc343h-linpatr4-> SELECT avgTemp as temp, (CAST(COUNT(stationID) AS float) / CAST(COUNT(DISTINCT day) AS float)) as stationsReportedPerDay FROM NYCDailyWeather
+csc343h-linpatr4-> GROUP BY avgTemp;
+
+
+DROP VIECREATE VIEW
+csc343h-linpatr4=>
+Wcsc343h-linpatr4=>
+csc343h-linpatr4=> DROP VIEW IF EXISTS StationsReportPrecip CASCADE;
+CNOTICE:  view "stationsreportprecip" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW StationsReportPrecip AS
+csc343h-linpatr4-> SELECT ROUND(precip ::int) as precip, (CAST(COUNT(stationID) AS float) / CAST(COUNT(DISTINCT day) AS float)) as stationsReportedPerDay FROM NYCDailyWeather
+csc343h-linpatr4-> GROUP BY ROUND(precip ::int);
+
+DROP VCREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> DROP VIEW IF EXISTS StationsReportWind CASCADE;
+ENOTICE:  view "stationsreportwind" does not exist, skipping
+DROP VIEW
+csc343h-linpatr4=> CREATE VIEW StationsReportWind AS
+csc343h-linpatr4-> SELECT ROUND(avgwindspeed ::int) as wind, (CAST(COUNT(stationID) AS float) / CAST(COUNT(DISTINCT day) AS float)) as stationsReportedPerDay FROM NYCDailyWeather
+csc343h-linpatr4-> GROUP BY ROUND(avgwindspeed ::int);
+NSERT CREATE VIEW
+csc343h-linpatr4=>
+csc343h-linpatr4=> INSERT INTO qAccidentsTempWS
+csc343h-linpatr4-> SELECT qAccidentsTemp.temp as temp, qAccidentsTemp.avgCrashes/StationsReportTemp.stationsReportedPerDay as averagecrashesperdayperstation, stationsReportedPerDay
+csc343h-linpatr4-> FROM
+csc343h-linpatr4-> qAccidentsTemp JOIN StationsReportTemp
+csc343h-linpatr4-> ON qAccidentsTemp.temp = StationsReportTemp.temp;
+INSERT INTO qAccidentsPrecipWS
+SELECT qAccidentsPrecip.precip as precip, qAccidentsPrecip.avgCrashes/StationsReportPrecip.stationsReportedPerDay as averagecrashesperdayperstation, stationsReportedPeINSERT 0 68
+csc343h-linpatr4=>
+csc343h-linpatr4=> INSERT INTO qAccidentsPrecipWS
+csc343h-linpatr4-> SELECT qAccidentsPrecip.precip as precip, qAccidentsPrecip.avgCrashes/StationsReportPrecip.stationsReportedPerDay as averagecrashesperdayperstation, stationsReportedPerDay
+csc343h-linpatr4-> FROM
+csc343h-linpatr4-> qAccidentsPrecip JOIN StationsReportPrecip
+csc343h-linpatr4-> ON qAccidentsPrecip.precip = StationsReportPrecip.precip;
+
+INSERT INTO qAccidentsWindWS
+SELECT qAccidentsWind.windspeed as wind, qAccidentsWind.avgCrashes/StationsReportWind.stationsReINSERT 0 6
+csc343h-linpatr4=>
+csc343h-linpatr4=> INSERT INTO qAccidentsWindWS
+csc343h-linpatr4-> SELECT qAccidentsWind.windspeed as wind, qAccidentsWind.avgCrashes/StationsReportWind.stationsReportedPerDay as averagecrashesperdayperstation, stationsReportedPerDay
+csc343h-linpatr4-> FROM
+csc343h-linpatr4-> qAccidentsWind JOIN StationsReportWind
+csc343h-linpatr4-> ON qAccidentsWind.windSpeed = StationsReportWind.wind;
+INSERT 0 28
+
+TAG: 'CRASHES PER DAY PER STATION ['TEMPERATURE']'
+TAG: 'Query 6'
+
+csc343h-linpatr4=> select * from qAccidentsTempWS;
+ temp | stationsreportedperday | averagecrashesperdayperstation
+------+------------------------+--------------------------------
+   16 |      0.642857142857143 |               1.55555555555556
+   17 |                   0.65 |               1.53846153846154
+   18 |      0.714285714285714 |                            1.4
+   20 |       63.7241379310345 |               1.38095238095238
+   21 |                188.125 |                            1.6
+   23 |       76.9523809523809 |                         1.3125
+   24 |       211.935483870968 |               1.72222222222222
+   25 |       190.285714285714 |               1.55555555555556
+   26 |       258.555555555556 |               1.38461538461538
+   27 |       157.090909090909 |               1.22222222222222
+   28 |       176.564102564103 |               1.77272727272727
+   29 |       368.571428571429 |                            1.4
+   30 |        31.906976744186 |               1.53571428571429
+   31 |       108.216216216216 |               1.32142857142857
+   32 |       274.782608695652 |                         1.4375
+   33 |                    153 |               1.47058823529412
+   34 |                    217 |               1.45161290322581
+   35 |        119.10447761194 |                1.5952380952381
+   36 |       147.586206896552 |                           1.45
+   37 |       173.863636363636 |               1.46666666666667
+   38 |       146.153846153846 |               1.36842105263158
+   39 |                  259.7 |               1.42857142857143
+   40 |       144.516129032258 |                           1.55
+   41 |       171.627906976744 |               1.43333333333333
+   42 |       233.592592592593 |               1.58823529411765
+   43 |       187.439024390244 |               1.41379310344828
+   44 |                  214.5 |               1.58974358974359
+   45 |       42.8936170212766 |                        1.46875
+   46 |       296.470588235294 |               1.41666666666667
+   47 |       231.466666666667 |               1.45161290322581
+   48 |       92.9268292682927 |               1.36666666666667
+   49 |                    136 |                            1.5
+   50 |       235.826086956522 |                         1.4375
+   51 |       145.185185185185 |               1.54285714285714
+   52 |        180.27027027027 |               1.27586206896552
+   53 |       146.057692307692 |               1.67741935483871
+   54 |       156.666666666667 |                            1.5
+   55 |       215.707317073171 |               1.24242424242424
+   56 |       270.947368421053 |               1.58333333333333
+   57 |                  218.7 |               1.48148148148148
+   58 |       228.083333333333 |               1.71428571428571
+   59 |                 163.75 |                            1.6
+   60 |                  150.8 |               1.55172413793103
+   61 |                  129.8 |               1.36363636363636
+   62 |       194.714285714286 |               1.68965517241379
+   63 |       270.285714285714 |                           1.75
+   64 |       201.806451612903 |               1.34782608695652
+   65 |                  86.25 |               1.73913043478261
+   66 |       213.333333333333 |                            1.5
+   67 |       218.263157894737 |               1.72727272727273
+   68 |       75.9130434782609 |               1.27777777777778
+   69 |       153.583333333333 |               1.26315789473684
+   70 |                67.4375 |               1.23076923076923
+   71 |                    326 |                            1.5
+   72 |       77.4117647058824 |               1.21428571428571
+   74 |                  109.8 |               1.66666666666667
+   75 |       98.8571428571429 |                           1.75
+   76 |                  297.6 |                           1.25
+   77 |                 291.75 |               1.33333333333333
+   78 |                195.625 |                            1.6
+   79 |                  401.4 |               1.11111111111111
+   80 |       222.833333333333 |               1.71428571428571
+   81 |                    648 |                              1
+   82 |                    102 |                              1
+   84 |                    547 |                              1
+   87 |                    653 |                              1
+   88 |                    759 |                              1
+   90 |                    686 |                              1
+(68 rows)
+
+================================================================================
+TAG: 'CRASHES PER DAY PER STATION ['PRECIPITATION']'
+TAG: 'Query 7'
+
+csc343h-linpatr4=> select * from qaccidentsprecipws;
+ precip | stationsreportedperday | averagecrashesperdayperstation
+--------+------------------------+--------------------------------
+      0 |       2.90244074991157 |               193.630136986301
+      1 |       5.34928229665072 |               48.2307692307692
+      2 |       14.5087209302326 |               11.0967741935484
+      3 |       45.2631578947368 |                           2.85
+      4 |       26.9565217391304 |                           5.75
+      5 |      0.571428571428571 |                            3.5
+(6 rows)
+
+================================================================================
+TAG: 'CRASHES PER DAY PER STATION ['WINDSPEED']'
+TAG: 'Query 8'
+
+csc343h-linpatr4=> select * from qaccidentswindws;
+ wind | stationsreportedperday | averagecrashesperdayperstation
+------+------------------------+--------------------------------
+    1 |       212.487804878049 |               1.24242424242424
+    2 |                  149.4 |               1.66666666666667
+    3 |       122.458064516129 |               1.81286549707602
+    4 |        72.452296819788 |               2.42918454935622
+    5 |       63.0508474576271 |               2.61693548387097
+    6 |       45.7034482758621 |               3.08510638297872
+    7 |       56.2184087363495 |               2.34798534798535
+    8 |       45.3865336658354 |               2.86428571428571
+    9 |       64.6378600823045 |               2.15044247787611
+   10 |       69.4625550660793 |               2.07305936073059
+   11 |       47.3295454545455 |               2.51428571428571
+   12 |       55.6711409395973 |               1.88607594936709
+   13 |       43.3034482758621 |               2.10144927536232
+   14 |       59.1747572815534 |               1.79130434782609
+   15 |        64.207650273224 |                1.9468085106383
+   16 |       63.0952380952381 |                           1.68
+   17 |                  62.64 |               1.72413793103448
+   18 |       52.7837837837838 |               1.76190476190476
+   19 |                     60 |                            1.3
+   20 |                104.625 |               1.18518518518519
+   21 |       55.7575757575758 |               1.43478260869565
+   22 |                83.6875 |               1.23076923076923
+   23 |       32.7272727272727 |                            1.1
+   24 |                    102 |                              1
+   25 |                 58.625 |               1.14285714285714
+   26 |                     31 |                              1
+   27 |                    154 |                              1
+   28 |                    142 |                              1
+(28 rows)
+
+================================================================================
+TAG: 'Query 9' 
+Note: sorry for potential formatting issue! There are a lot of columns and the table is very wide.  
+
+csc343h-linpatr4=> select * from qFactors;
+            factor1             |   factor2   | factor3 | factor4 | factor5 |              vehicle1               |              vehicle2               | vehicle3 | vehicle4 | vehicle5 | count
+--------------------------------+-------------+---------+---------+---------+-------------------------------------+-------------------------------------+----------+----------+----------+-------
+ Unspecified                    |             |         |         |         | Sedan                               |                                     |          |          |          |  9299
+ Driver Inattention/Distraction | Unspecified |         |         |         | Sedan                               | Sedan                               |          |          |          |  7728
+ Unspecified                    | Unspecified |         |         |         | Sedan                               | Sedan                               |          |          |          |  7359
+ Unspecified                    |             |         |         |         | Station Wagon/Sport Utility Vehicle |                                     |          |          |          |  5487
+ Driver Inattention/Distraction | Unspecified |         |         |         | Station Wagon/Sport Utility Vehicle | Sedan                               |          |          |          |  4800
+ Driver Inattention/Distraction | Unspecified |         |         |         | Sedan                               | Station Wagon/Sport Utility Vehicle |          |          |          |  4777
+ Driver Inattention/Distraction | Unspecified |         |         |         | Station Wagon/Sport Utility Vehicle | Station Wagon/Sport Utility Vehicle |          |          |          |  4563
+ Following Too Closely          | Unspecified |         |         |         | Sedan                               | Sedan                               |          |          |          |  4499
+ Unspecified                    | Unspecified |         |         |         | Sedan                               | Station Wagon/Sport Utility Vehicle |          |          |          |  3860
+ Unspecified                    | Unspecified |         |         |         | Station Wagon/Sport Utility Vehicle | Sedan                               |          |          |          |  3696
+(10 rows)
+
