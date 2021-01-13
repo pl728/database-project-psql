@@ -1,4 +1,5 @@
 # PSQL Database Project for NYC Accidents Database.
+Authors: Chloe Nguyen, Patrick Lin
 
 ![](presentation/CSC343&#32;-&#32;Project_&#32;Presentation-01.jpg?raw=true)
 ![](presentation/CSC343&#32;-&#32;Project_&#32;Presentation-02.jpg?raw=true)
